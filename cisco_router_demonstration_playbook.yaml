@@ -1,0 +1,35 @@
+---
+- name: CONFIGURE CSR1kv Router
+  hosts: CSR1kv
+  gather_facts: false
+  connection: local
+
+  tasks:
+  - name: SET IPv6 ADDRESS
+    ios_config:
+      parents: "interface GigabitEthernet1"
+      lines:
+        - description IPv6 ADDRESS
+        - ipv6 address 2001:DB8:ACAD:1::1/64
+        - ipv6 address FE80::1:1 link-local
+  - name: SET OSPF
+    ios_config:
+      parents: "router ospf 1"
+      lines:
+        -  network 192.168.10.0 0.0.0.255 area 0
+  - name: SET DHCP Pool
+    ios_config:
+      parents: "ip dhcp pool 1"
+      lines:
+       - network 192.168.10.0 255.255.255.0
+       - domain-name cnit381.com
+       - default-router 192.168.10.1
+  - name: SHOW RUNNING CONFIGURATION
+    ios_command:
+      commands:
+        - show run
+    register: output
+  - name: SAVE OUTPUT ./ios_configurations/
+    copy:
+      content: "{{ output.stdout[0] }}"
+      dest: "ios_configurations/configuration_output_{{ inventory_hostname }}.txt"
